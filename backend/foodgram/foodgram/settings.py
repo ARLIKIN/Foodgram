@@ -8,6 +8,8 @@ SECRET_KEY = 'django-insecure-vun+fd%5d3a+$gk(%33imfbmk7z5ojc#--*!1^=h%e$mx(k4v(
 
 DEBUG = True
 
+OUTPUT_LENGTH = 10
+
 
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 
