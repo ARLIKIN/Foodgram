@@ -1,4 +1,4 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, mixins
 
 from django.contrib.auth import get_user_model
 
@@ -11,11 +11,18 @@ from backend.foodgram.food.models import (
 User = get_user_model()
 
 
-class UserViewSet(viewsets.ModelViewSet):
+class UserViewSet(
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    mixins.CreateModelMixin,
+    viewsets.GenericViewSet
+):
     queryset = User.objects.all()
 
 
-class TegViewSet(viewsets.ModelViewSet):
+class TegViewSet(
+    mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet
+):
     queryset = Tag.objects.all()
 
 
