@@ -112,6 +112,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 DJOSER = {
     'LOGIN_FIELD': 'email',
     'SEND_ACTIVATION_EMAIL': False,
+    'HIDE_USERS': False,
     'SERIALIZERS': {
         'user': 'api.serializers.UserSerializer',
         'current_user': 'api.serializers.UserSerializer',
@@ -130,5 +131,10 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         'rest_framework.authentication.TokenAuthentication',
     ],
+    "DEFAULT_PAGINATION_CLASS":
+        'rest_framework.pagination.LimitOffsetPagination',
     'PAGE_SIZE': 6,
 }
+
+USERNAME_PATTERN = r'[\w.@+-]'
+FORBIDDEN_NAMES = ('me',)

@@ -1,8 +1,10 @@
-from rest_framework import viewsets, mixins
+from djoser.views import UserViewSet
+from rest_framework import viewsets, mixins, generics, permissions
 
 from django.contrib.auth import get_user_model
+from rest_framework.permissions import IsAuthenticated, AllowAny
 
-from backend.foodgram.food.models import (
+from food.models import (
     Tag, Recipe,
     Favorite, Ingredient,
     ShoppingCart, Subscribe
@@ -11,13 +13,14 @@ from backend.foodgram.food.models import (
 User = get_user_model()
 
 
-class UserViewSet(
-    mixins.ListModelMixin,
-    mixins.RetrieveModelMixin,
-    mixins.CreateModelMixin,
-    viewsets.GenericViewSet
-):
-    queryset = User.objects.all()
+class MyUserViewSet(UserViewSet):
+
+    def get_permissions(self):
+        if self.request.path.endswith('me/'):
+            return (IsAuthenticated(),)
+        elif self.action in ('retrieve', 'list'):
+            return (AllowAny(),)
+        return super().get_permissions()
 
 
 class TegViewSet(
