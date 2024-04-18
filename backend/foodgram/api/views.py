@@ -11,6 +11,7 @@ from food.models import (
     ShoppingCart, Subscribe
 )
 from .serializers import TagsSerializer, IngredientSerializer
+from .filters import IngredientFilter
 
 User = get_user_model()
 
@@ -53,8 +54,5 @@ class IngredientsViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = IngredientSerializer
     pagination_class = None
     permission_classes = (AllowAny,)
-    filter_backends = (
-        DjangoFilterBackend,
-        filters.SearchFilter,
-    )
-    search_fields = ('^name',)  # Todo работает только если использовать search
+    filter_backends = (IngredientFilter,)
+    search_fields = ('^name',)
