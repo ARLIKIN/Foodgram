@@ -1,3 +1,5 @@
+from django.contrib.auth.models import AnonymousUser
+from django.db.models import Exists, OuterRef
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
 from rest_framework import viewsets, mixins, generics, permissions, filters
