@@ -43,6 +43,10 @@ class RecipeIngredient(models.Model):
     ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE)
     amount = models.IntegerField(verbose_name='Количество')
 
+    class Meta:
+        default_related_name = 'recipe_ingredients'
+        unique_together = ('recipe', 'ingredient')
+
 
 class Recipe(models.Model):
     """Модель для рецептов."""
@@ -60,7 +64,8 @@ class Recipe(models.Model):
     cooking_time = models.PositiveSmallIntegerField(
         verbose_name='Время приготовления'
     )
-    tag = models.ManyToManyField(Tag)
+    pub_date = models.DateTimeField(auto_now_add=True)
+    tags = models.ManyToManyField(Tag)
     ingredients = models.ManyToManyField(
         Ingredient, through='RecipeIngredient'
     )
@@ -84,6 +89,7 @@ class Favorite(models.Model):
         verbose_name = 'Избранное'
         verbose_name_plural = 'избранное'
         default_related_name = 'favorites'
+        unique_together = ('user', 'recipe')
         ordering = ('user',)
 
     def __str__(self):
@@ -99,6 +105,7 @@ class ShoppingCart(models.Model):
         verbose_name = 'Корзина'
         verbose_name_plural = 'корзина'
         default_related_name = 'shopping_cart'
+        unique_together = ('user', 'recipe')
         ordering = ('user',)
 
     def __str__(self):
@@ -123,6 +130,7 @@ class Subscribe(models.Model):
     class Meta:
         verbose_name = 'Подписки'
         verbose_name_plural = 'подписки'
+        unique_together = ('user', 'sub_user')
         ordering = ('user',)
 
     def __str__(self):

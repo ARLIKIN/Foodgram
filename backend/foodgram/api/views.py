@@ -1,5 +1,5 @@
 from django.contrib.auth.models import AnonymousUser
-from django.db.models import Exists, OuterRef
+from django.db.models import Exists, OuterRef, Count
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
 from rest_framework import viewsets, mixins, generics, permissions, filters
@@ -12,8 +12,13 @@ from food.models import (
     Favorite, Ingredient,
     ShoppingCart, Subscribe
 )
-from .serializers import TagsSerializer, IngredientSerializer
-from .filters import IngredientFilter
+from .serializers import (
+    TagsSerializer,
+    IngredientSerializer,
+    WriteRecipeSerializer,
+    ReadRecipeSerializer
+)
+from .filters import IngredientFilter, RecipesFilter
 
 User = get_user_model()
 
@@ -37,6 +42,13 @@ class TegViewSet(viewsets.ReadOnlyModelViewSet):
 
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
+    permission_classes = (AllowAny,)
+    filterset_class = (RecipesFilter,)
+
+    def get_serializer_class(self):
+        if self.request.method == 'GET':
+            return ReadRecipeSerializer
+        return WriteRecipeSerializer
 
 
 class ShoppingCartViewSet(viewsets.ModelViewSet):
