@@ -41,6 +41,40 @@ class UserSerializer(serializers.ModelSerializer):
         return user.subscribed.filter(sub_user=request_user).exists()
 
 
+class RecipeUserSerializer(serializers.ModelSerializer):
+    image = Base64ImageField()
+
+    class Meta:
+        model = Recipe
+        fields = (
+            'id', 'image', 'name', 'cooking_time'
+        )
+
+
+class UserSubscribeSerializer(serializers.ModelSerializer):
+    is_subscribed = serializers.SerializerMethodField()
+    recipes = RecipeUserSerializer(many=True, read_only=True)
+    recipes_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = (
+            'email', 'id',
+            'username', 'first_name',
+            'last_name', 'is_subscribed',
+            'recipes', 'recipes_count'
+        )
+
+    def get_recipes_count(self, user):
+        return user.recipes.all().count()
+
+    def get_is_subscribed(self, user):
+        request_user = self.context['request'].user
+        if not request_user.is_authenticated:
+            return False
+        return request_user.subscribed.filter(sub_user=user).exists()
+
+
 class TagsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tag

@@ -1,8 +1,10 @@
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
-from rest_framework import viewsets, mixins, generics, permissions, filters
+from rest_framework import viewsets, mixins, generics, permissions, filters, \
+    status
 
 from django.contrib.auth import get_user_model
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated, AllowAny
 
 from food.models import (
@@ -10,11 +12,14 @@ from food.models import (
     Favorite, Ingredient,
     ShoppingCart, Subscribe
 )
+from rest_framework.response import Response
+
 from .serializers import (
     TagsSerializer,
     IngredientSerializer,
     WriteRecipeSerializer,
-    ReadRecipeSerializer
+    ReadRecipeSerializer,
+    UserSubscribeSerializer
 )
 from .filters import IngredientFilter, RecipesFilter
 from .permissions import IsAuthorOrReadOnly
@@ -30,6 +35,36 @@ class MyUserViewSet(UserViewSet):
         elif self.action in ('retrieve', 'list'):
             return (AllowAny(),)
         return super().get_permissions()
+
+    @action(
+        detail=False,
+        methods=['get'],
+        permission_classes=[IsAuthenticated]
+    )
+    def subscriptions(self, request):
+        pages = self.paginate_queryset(
+            User.objects.filter(subscribe__user=self.request.user)
+        )
+        serializer = UserSubscribeSerializer(
+            pages,
+            many=True,
+            context={'request': request}
+        )
+        return self.get_paginated_response(serializer.data)
+
+    @action(
+        detail=True,
+        methods=['post'],
+        permission_classes=[IsAuthenticated],
+        pagination_class=None
+    )
+    def subscribe(self, request, id=None):
+        user = User.objects.get(pk=id)
+        Subscribe.objects.create(user=request.user, sub_user=user)
+        serializer = UserSubscribeSerializer(
+            user, context={'request': request}
+        )
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class TegViewSet(viewsets.ReadOnlyModelViewSet):
