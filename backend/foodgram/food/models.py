@@ -73,7 +73,7 @@ class Recipe(models.Model):
     class Meta:
         verbose_name = 'Рецепт'
         verbose_name_plural = 'рецепт'
-        default_related_name = 'recipe'
+        default_related_name = 'recipes'
         ordering = ('name',)
 
     def __str__(self):

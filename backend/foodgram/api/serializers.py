@@ -126,7 +126,7 @@ class WriteRecipeSerializer(serializers.ModelSerializer):
             raise ValidationError(
                 'В запросе обязательно должны быть тэги'
             )
-        return data
+        return super().validate(data)
 
     def validate_tags(self, tags):
         if not tags:
