@@ -1,7 +1,7 @@
 from django_filters import FilterSet, filters
 from rest_framework.filters import SearchFilter
 from django.contrib.auth import get_user_model
-from food.models import Recipe
+from food.models import Recipe, Tag
 
 User = get_user_model()
 
@@ -11,20 +11,31 @@ class IngredientFilter(SearchFilter):
 
 
 class RecipesFilter(FilterSet):
-    author = filters.ModelChoiceFilter(queryset=User.objects.all())
-    tags = filters.AllValuesMultipleFilter(field_name="tags__slug")
-    is_favorited = filters.BooleanFilter(method="filter_is_favorited")
-    is_in_shopping_cart = filters.BooleanFilter(
-        method="filter_is_in_shopping_cart"
+    tags = filters.ModelMultipleChoiceFilter(
+        field_name="tags__slug",
+        to_field_name="slug",
+        queryset=Tag.objects.all()
     )
+    is_favorited = filters.BooleanFilter(method="is_favorited_filter")
+    is_in_shopping_cart = filters.BooleanFilter(
+        method="is_in_shopping_cart_filter")
+
     class Meta:
         model = Recipe
-        fields = ["author", "tags"]
-    def filter_is_favorited(self, queryset, name, value):
-        if value:
-            return queryset.filter(recipefavorites__user=self.request.user)
-        return queryset.objects.all()
-    def filter_is_in_shopping_cart(self, queryset, name, value):
-        if value:
-            return queryset.filter(shoppinglist__user=self.request.user)
-        return queryset.objects.all()
+        fields = ("author", "tags")
+
+    def is_favorited_filter(self, queryset, name, value):
+        user = self.request.user
+        if user.is_authenticated:
+            if not value:
+                return queryset.exclude(favorite__user=user)
+            return queryset.filter(favorite__user=user)
+        return queryset
+
+    def is_in_shopping_cart_filter(self, queryset, name, value):
+        user = self.request.user
+        if user.is_authenticated:
+            if not value:
+                return queryset.exclude(cart__user=user)
+            return queryset.filter(cart__user=user)
+        return queryset
