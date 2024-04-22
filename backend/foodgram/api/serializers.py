@@ -41,7 +41,7 @@ class UserSerializer(serializers.ModelSerializer):
         return request_user.subscribed.filter(sub_user=user).exists()
 
 
-class RecipeUserSerializer(serializers.ModelSerializer):
+class RecipeMiniSerializer(serializers.ModelSerializer):
     image = Base64ImageField()
 
     class Meta:
@@ -79,7 +79,7 @@ class UserSubscribeSerializer(serializers.ModelSerializer):
         recipes = user.recipes.all()
         if limit:
             recipes = recipes[:int(limit)]
-        serializer = RecipeUserSerializer(
+        serializer = RecipeMiniSerializer(
             recipes, many=True, context=self.context
         )
         return serializer.data
