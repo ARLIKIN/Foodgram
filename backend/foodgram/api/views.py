@@ -56,27 +56,26 @@ class MyUserViewSet(UserViewSet):
         )
         return self.get_paginated_response(serializer.data)
 
-    @action(
-        detail=True,
-        methods=['post'],
-        permission_classes=[IsAuthenticated],
-        pagination_class=None
-    )
-    def subscribe(self, request, id=None):
+    @action(detail=True, permission_classes=(IsAuthenticated,))
+    def subscribe(self, request, pk) -> Response:
+        """Добавляет или удаляет рецепт в корзину"""
+
+    @subscribe.mapping.post
+    def subscribe_add(self, request, id=None):
         user = User.objects.filter(pk=id).first()
         if not user:
             return Response(
-                'Пользователь не существует',
+                {'errors': 'Пользователь не существует'},
                 status=status.HTTP_404_NOT_FOUND
             )
         if Subscribe.objects.filter(user=request.user, sub_user=user):
             return Response(
-                'Попытка создания дублирующей подписки',
+                {'errors': 'Попытка создания дублирующей подписки'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         if user == request.user:
             return Response(
-                'Нельзя подписаться на самого себя',
+                {'errors': 'Нельзя подписаться на самого себя'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         Subscribe.objects.create(user=request.user, sub_user=user)
@@ -84,6 +83,26 @@ class MyUserViewSet(UserViewSet):
             user, context={'request': request}
         )
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @subscribe.mapping.delete
+    def subscribe_delete(self, request, id=None):
+        user = User.objects.filter(pk=id).first()
+        if not user:
+            return Response(
+                {'errors': 'Пользователь не существует'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        if not Subscribe.objects.filter(user=request.user, sub_user=user):
+            return Response(
+                {'errors': 'Вы не подписаны на пользователя'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        subscriber = Subscribe.objects.get(user=request.user, sub_user=user)
+        subscriber.delete()
+        return Response(
+            'Успешная отписка',
+            status=status.HTTP_204_NO_CONTENT
+        )
 
 
 class TegViewSet(viewsets.ReadOnlyModelViewSet):
