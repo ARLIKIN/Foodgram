@@ -180,7 +180,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     )
     def download_shopping_cart(self, request):
         user = request.user
-        shopping_cart = user.shopping_cart.all()
+        shopping_cart = user.shoppingcarts.all()
         ingredients = []
         for card in shopping_cart:
             ingredients.append(

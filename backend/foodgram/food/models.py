@@ -5,37 +5,51 @@ from django.contrib.auth import get_user_model
 User = get_user_model()
 
 
-class Tag(models.Model):
-    """Модель для тэгов."""
-    name = models.CharField(verbose_name='Название', max_length=200)
-    color = models.CharField(verbose_name='Цвет', max_length=7)
-    slug = models.CharField(verbose_name='Слаг', max_length=200)
+class BaseCartItem(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    recipe = models.ForeignKey('Recipe', on_delete=models.CASCADE)
 
     class Meta:
-        verbose_name = 'Тэг'
-        verbose_name_plural = 'тэг'
-        default_related_name = 'tags'
+        abstract = True
+        default_related_name = '%(class)ss'
+        unique_together = ('user', 'recipe')
+        ordering = ('user',)
+
+    def __str__(self):
+        return self.user[:settings.OUTPUT_LENGTH]
+
+
+class BaseName(models.Model):
+    name = models.CharField(verbose_name='Название', max_length=200)
+
+    class Meta:
+        abstract = True
+        default_related_name = '%(class)ss'
         ordering = ('name',)
 
     def __str__(self):
         return self.name[:settings.OUTPUT_LENGTH]
 
 
-class Ingredient(models.Model):
+class Tag(BaseName):
+    """Модель для тэгов."""
+    color = models.CharField(verbose_name='Цвет', max_length=7)
+    slug = models.CharField(verbose_name='Слаг', max_length=200)
+
+    class Meta(BaseName.Meta):
+        verbose_name = 'Тэг'
+        verbose_name_plural = 'тэг'
+
+
+class Ingredient(BaseName):
     """Модель для ингредиентов."""
-    name = models.CharField(verbose_name='Название', max_length=200)
     measurement_unit = models.CharField(
         verbose_name='Единицы измерения', max_length=200
     )
 
-    class Meta:
+    class Meta(BaseName.Meta):
         verbose_name = 'Ингридиент'
         verbose_name_plural = 'ингридиент'
-        default_related_name = 'ingredients'
-        ordering = ('name',)
-
-    def __str__(self):
-        return self.name[:settings.OUTPUT_LENGTH]
 
 
 class RecipeIngredient(models.Model):
@@ -48,12 +62,11 @@ class RecipeIngredient(models.Model):
         unique_together = ('recipe', 'ingredient')
 
 
-class Recipe(models.Model):
+class Recipe(BaseName):
     """Модель для рецептов."""
     author = models.ForeignKey(
         User, on_delete=models.CASCADE, verbose_name='Автор'
     )
-    name = models.CharField(verbose_name='Название', max_length=200)
     image = models.ImageField(
         upload_to='foodgram/images/',
         null=True,
@@ -70,46 +83,25 @@ class Recipe(models.Model):
         Ingredient, through='RecipeIngredient'
     )
 
-    class Meta:
+    class Meta(BaseName.Meta):
         verbose_name = 'Рецепт'
         verbose_name_plural = 'рецепт'
-        default_related_name = 'recipes'
-        ordering = ('name',)
-
-    def __str__(self):
-        return self.name[:settings.OUTPUT_LENGTH]
 
 
-class Favorite(models.Model):
+class Favorite(BaseCartItem):
     """Модель для избранных рецептов."""
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
 
-    class Meta:
+    class Meta(BaseCartItem.Meta):
         verbose_name = 'Избранное'
         verbose_name_plural = 'избранное'
-        default_related_name = 'favorites'
-        unique_together = ('user', 'recipe')
-        ordering = ('user',)
-
-    def __str__(self):
-        return self.user[:settings.OUTPUT_LENGTH]
 
 
-class ShoppingCart(models.Model):
+class ShoppingCart(BaseCartItem):
     """Модель для коризны."""
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
 
-    class Meta:
+    class Meta(BaseCartItem.Meta):
         verbose_name = 'Корзина'
         verbose_name_plural = 'корзина'
-        default_related_name = 'shopping_cart'
-        unique_together = ('user', 'recipe')
-        ordering = ('user',)
-
-    def __str__(self):
-        return self.user[:settings.OUTPUT_LENGTH]
 
 
 class Subscribe(models.Model):
