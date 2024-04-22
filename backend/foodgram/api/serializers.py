@@ -5,8 +5,11 @@ from django.contrib.auth import get_user_model
 from django.core.files.base import ContentFile
 
 from rest_framework import serializers
-from food.models import Tag, Ingredient, Recipe, RecipeIngredient, Favorite, \
-    ShoppingCart
+from food.models import (
+    Ingredient, Favorite,
+    Tag, Recipe,
+    RecipeIngredient, ShoppingCart
+)
 from rest_framework.exceptions import ValidationError
 
 User = get_user_model()
@@ -50,12 +53,11 @@ class RecipeMiniSerializer(serializers.ModelSerializer):
         )
 
 
-class UserSubscribeSerializer(serializers.ModelSerializer):
-    is_subscribed = serializers.SerializerMethodField()
+class UserSubscribeSerializer(UserSerializer):
     recipes = serializers.SerializerMethodField()
     recipes_count = serializers.SerializerMethodField()
 
-    class Meta:
+    class Meta(UserSerializer.Meta):
         model = User
         fields = (
             'email', 'id',
@@ -66,12 +68,6 @@ class UserSubscribeSerializer(serializers.ModelSerializer):
 
     def get_recipes_count(self, user):
         return user.recipes.all().count()
-
-    def get_is_subscribed(self, user):
-        request_user = self.context['request'].user
-        if not request_user.is_authenticated:
-            return False
-        return request_user.subscribed.filter(sub_user=user).exists()
 
     def get_recipes(self, user):
         limit = self.context['request'].query_params.get('recipes_limit')
@@ -129,22 +125,20 @@ class ReadRecipeSerializer(serializers.ModelSerializer):
             amount=F('recipe_ingredients__amount')
         )
 
-    def get_is_favorited(self, recipe):
+    def get_is_favorited_or__shopping_cart(self, model, recipe):
         request_user = self.context['request'].user
         if not request_user.is_authenticated:
             return False
-        return Favorite.objects.filter(
+        return model.objects.filter(
             user=request_user,
             recipe=recipe
         ).exists()
 
+    def get_is_favorited(self, recipe):
+        return self.get_is_favorited_or__shopping_cart(Favorite, recipe)
+
     def get_is_in_shopping_cart(self, recipe):
-        request_user = self.context['request'].user
-        if not request_user.is_authenticated:
-            return False
-        return ShoppingCart.objects.filter(
-            user=request_user, recipe=recipe
-        ).exists()
+        return self.get_is_favorited_or__shopping_cart(ShoppingCart, recipe)
 
 
 class WriteRecipeSerializer(serializers.ModelSerializer):
