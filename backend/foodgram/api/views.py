@@ -43,7 +43,6 @@ class MyUserViewSet(UserViewSet):
     @action(
         detail=False,
         methods=['get'],
-        permission_classes=[IsAuthenticated]
     )
     def subscriptions(self, request):
         pages = self.paginate_queryset(
@@ -56,7 +55,7 @@ class MyUserViewSet(UserViewSet):
         )
         return self.get_paginated_response(serializer.data)
 
-    @action(detail=True, permission_classes=(IsAuthenticated,))
+    @action(detail=True)
     def subscribe(self, request, pk) -> Response:
         """Добавляет или удаляет рецепт в корзину"""
 
@@ -161,7 +160,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             status=status.HTTP_204_NO_CONTENT
         )
 
-    @action(detail=True, permission_classes=(IsAuthenticated,))
+    @action(detail=True)
     def favorite(self, request, pk) -> Response:
         """Добавляет или удаляет рецепт в избранное"""
 
@@ -175,7 +174,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     @action(
         detail=False,
-        permission_classes=(IsAuthenticated,),
         methods=['get']
     )
     def download_shopping_cart(self, request):
