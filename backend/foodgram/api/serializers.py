@@ -38,7 +38,7 @@ class UserSerializer(serializers.ModelSerializer):
         request_user = self.context['request'].user
         if not request_user.is_authenticated:
             return False
-        return user.subscribed.filter(sub_user=request_user).exists()
+        return request_user.subscribed.filter(sub_user=user).exists()
 
 
 class RecipeUserSerializer(serializers.ModelSerializer):
