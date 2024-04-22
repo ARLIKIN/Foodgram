@@ -205,7 +205,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         file_object.seek(0)
         response = HttpResponse(file_object, content_type='text/plain')
         response['Content-Disposition'] = \
-            f'attachment; filename="shopping_cart.txt"'
+            'attachment; filename="shopping_cart.txt"'
         return response
 
     @action(detail=True, permission_classes=(IsAuthenticated,))

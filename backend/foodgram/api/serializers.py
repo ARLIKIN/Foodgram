@@ -171,7 +171,7 @@ class WriteRecipeSerializer(serializers.ModelSerializer):
         for tag in tags:
             if tags.count(tag) > 1:
                 raise ValidationError(
-                    f'Тэг дублируется'
+                    'Тэг дублируется'
                 )
         return tags
 
@@ -181,7 +181,7 @@ class WriteRecipeSerializer(serializers.ModelSerializer):
         for ingredient in ingredients:
             if ingredients.count(ingredient) > 1:
                 raise ValidationError(
-                    f'Ингридиент дублируется'
+                    'Ингридиент дублируется'
                 )
             if ingredient['amount'] <= 0:
                 raise ValidationError(
