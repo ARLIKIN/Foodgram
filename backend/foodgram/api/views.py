@@ -19,7 +19,8 @@ from .serializers import (
     IngredientSerializer,
     WriteRecipeSerializer,
     ReadRecipeSerializer,
-    UserSubscribeSerializer
+    UserSubscribeSerializer,
+    RecipeMiniSerializer
 )
 from .filters import IngredientFilter, RecipesFilter
 from .permissions import IsAuthorOrReadOnly
@@ -100,6 +101,48 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return ReadRecipeSerializer
         return WriteRecipeSerializer
 
+    @action(detail=True, permission_classes=(IsAuthenticated,))
+    def favorite(self, request, pk) -> Response:
+        """Добавляет или удаляет рецепт в избранное"""
+
+    @favorite.mapping.post
+    def favorite_add(self, request, pk=None):
+        recipe = Recipe.objects.filter(id=pk).first()
+        if not recipe:
+            return Response(
+                'Рецепт не существует',
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        recipe = Recipe.objects.get(id=pk)
+        if Favorite.objects.filter(user=request.user, recipe=recipe):
+            return Response(
+                'Попытка повторного добавления рецепта в избранное',
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        Favorite.objects.create(user=request.user, recipe=recipe)
+        serializer = RecipeMiniSerializer(recipe, context={'request': request})
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @favorite.mapping.delete
+    def favorite_delete(self, request, pk=None):
+        recipe = Recipe.objects.filter(id=pk).first()
+        if not recipe:
+            return Response(
+                'Рецепт не существует',
+                status=status.HTTP_404_NOT_FOUND
+            )
+        recipe = Recipe.objects.get(id=pk)
+        favorite_instance = Favorite.objects.filter(
+            user=request.user,
+            recipe=recipe
+        ).first()
+        if not favorite_instance:
+            return Response(
+                'Рецепта нет в избранном',
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        favorite_instance.delete()
+        return Response('Рецепт удален из избранного')
 
 class ShoppingCartViewSet(viewsets.ModelViewSet):
     queryset = ShoppingCart.objects.all()
