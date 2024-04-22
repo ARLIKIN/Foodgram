@@ -60,12 +60,12 @@ class MyUserViewSet(UserViewSet):
         pagination_class=None
     )
     def subscribe(self, request, id=None):
-        if not User.objects.filter(pk=id).exists():
+        user = User.objects.filter(pk=id).first()
+        if not user:
             return Response(
                 'Пользователь не существует',
                 status=status.HTTP_404_NOT_FOUND
             )
-        user = User.objects.get(pk=id)
         if Subscribe.objects.filter(user=request.user, sub_user=user):
             return Response(
                 'Попытка создания дублирующей подписки',
@@ -101,48 +101,80 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return ReadRecipeSerializer
         return WriteRecipeSerializer
 
+    def create_favorite_shopping_cart(self, request, model, pk):
+        recipe = Recipe.objects.filter(id=pk).first()
+        if not recipe:
+            return Response(
+                {'errors': 'Рецепт не существует'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        if model.objects.filter(user=request.user, recipe=recipe):
+            return Response(
+                {'errors': 'Попытка повторного добавления рецепта'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        model.objects.create(user=request.user, recipe=recipe)
+        serializer = RecipeMiniSerializer(recipe, context={'request': request})
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def destroy_favorite_shopping_cart(self, request, model, pk):
+        recipe = Recipe.objects.filter(id=pk).first()
+        if not recipe:
+            return Response(
+                {'errors': 'Рецепт не существует'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        instance = model.objects.filter(
+            user=request.user,
+            recipe=recipe
+        ).first()
+        if not instance:
+            return Response(
+                {'errors': 'Рецепта нет'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        instance.delete()
+        return Response(
+            'Рецепт удален',
+            status=status.HTTP_204_NO_CONTENT
+        )
+
     @action(detail=True, permission_classes=(IsAuthenticated,))
     def favorite(self, request, pk) -> Response:
         """Добавляет или удаляет рецепт в избранное"""
 
     @favorite.mapping.post
     def favorite_add(self, request, pk=None):
-        recipe = Recipe.objects.filter(id=pk).first()
-        if not recipe:
-            return Response(
-                'Рецепт не существует',
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        recipe = Recipe.objects.get(id=pk)
-        if Favorite.objects.filter(user=request.user, recipe=recipe):
-            return Response(
-                'Попытка повторного добавления рецепта в избранное',
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        Favorite.objects.create(user=request.user, recipe=recipe)
-        serializer = RecipeMiniSerializer(recipe, context={'request': request})
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return self.create_favorite_shopping_cart(request, Favorite, pk)
 
     @favorite.mapping.delete
     def favorite_delete(self, request, pk=None):
-        recipe = Recipe.objects.filter(id=pk).first()
-        if not recipe:
-            return Response(
-                'Рецепт не существует',
-                status=status.HTTP_404_NOT_FOUND
-            )
-        recipe = Recipe.objects.get(id=pk)
-        favorite_instance = Favorite.objects.filter(
-            user=request.user,
-            recipe=recipe
-        ).first()
-        if not favorite_instance:
-            return Response(
-                'Рецепта нет в избранном',
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        favorite_instance.delete()
-        return Response('Рецепт удален из избранного')
+        return self.destroy_favorite_shopping_cart(request, Favorite, pk)
+
+    @action(
+        detail=False,
+        permission_classes=(IsAuthenticated,),
+        methods=['get']
+    )
+    def download_shopping_cart(self, request):
+        user = request.user
+        shopping_cart = user.shopping_cart.all()
+
+    @action(detail=True, permission_classes=(IsAuthenticated,))
+    def shopping_cart(self, request, pk) -> Response:
+        """Добавляет или удаляет рецепт в корзину"""
+
+    @shopping_cart.mapping.post
+    def shopping_add(self, request, pk=None):
+        return self.create_favorite_shopping_cart(request, ShoppingCart, pk)
+
+    @shopping_cart.mapping.delete
+    def shopping_delete(self, request, pk=None):
+        return self.destroy_favorite_shopping_cart(request, ShoppingCart, pk)
+
+
+
+
 
 class ShoppingCartViewSet(viewsets.ModelViewSet):
     queryset = ShoppingCart.objects.all()
