@@ -1,7 +1,10 @@
+import io
+
+from django.http import HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
-from rest_framework import viewsets, mixins, generics, permissions, filters, \
-    status
+from django.db.models import F
+from rest_framework import viewsets, status
 
 from django.contrib.auth import get_user_model
 from rest_framework.decorators import action
@@ -159,6 +162,34 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def download_shopping_cart(self, request):
         user = request.user
         shopping_cart = user.shopping_cart.all()
+        ingredients = []
+        for card in shopping_cart:
+            ingredients.append(
+                card.recipe.ingredients.values(
+                    'name', 'measurement_unit',
+                    amount=F('recipe_ingredients__amount')
+                ).first()
+            )
+
+        unique_objects = {}
+        file = ''
+        for ingredient in ingredients:
+            key = (ingredient['name'], ingredient['measurement_unit'])
+            if key in unique_objects:
+                unique_objects[key].append(ingredient)
+            else:
+                unique_objects[key] = [ingredient]
+        for key, ingredient_list in unique_objects.items():
+            total_amount = sum(obj['amount'] for obj in ingredient_list)
+            file += f'{key[0]} ({key[1]}) — {total_amount}\n'
+
+        file_object = io.BytesIO()
+        file_object.write(file.encode())
+        file_object.seek(0)
+        response = HttpResponse(file_object, content_type='text/plain')
+        response['Content-Disposition'] = \
+            f'attachment; filename="shopping_cart.txt"'
+        return response
 
     @action(detail=True, permission_classes=(IsAuthenticated,))
     def shopping_cart(self, request, pk) -> Response:
@@ -171,9 +202,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
     @shopping_cart.mapping.delete
     def shopping_delete(self, request, pk=None):
         return self.destroy_favorite_shopping_cart(request, ShoppingCart, pk)
-
-
-
 
 
 class ShoppingCartViewSet(viewsets.ModelViewSet):
