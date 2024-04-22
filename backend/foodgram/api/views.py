@@ -59,7 +59,22 @@ class MyUserViewSet(UserViewSet):
         pagination_class=None
     )
     def subscribe(self, request, id=None):
+        if not User.objects.filter(pk=id).exists():
+            return Response(
+                'Пользователь не существует',
+                status=status.HTTP_404_NOT_FOUND
+            )
         user = User.objects.get(pk=id)
+        if Subscribe.objects.filter(user=request.user, sub_user=user):
+            return Response(
+                'Попытка создания дублирующей подписки',
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        if user == request.user:
+            return Response(
+                'Нельзя подписаться на самого себя',
+                status=status.HTTP_400_BAD_REQUEST
+            )
         Subscribe.objects.create(user=request.user, sub_user=user)
         serializer = UserSubscribeSerializer(
             user, context={'request': request}
