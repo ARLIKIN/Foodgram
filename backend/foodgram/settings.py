@@ -1,17 +1,23 @@
+import os
+
 from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+DEFAULT_SECRET_KEY = 'django-insecure-vun+fd%5d3a+$gk(%33imfbmk7z5ojc#--*!1^=h%e$mx(k4v('
 
-SECRET_KEY = 'django-insecure-vun+fd%5d3a+$gk(%33imfbmk7z5ojc#--*!1^=h%e$mx(k4v('
+SECRET_KEY = os.getenv('SECRET_KEY', DEFAULT_SECRET_KEY)
 
 
-DEBUG = True
+DEBUG = os.getenv('DEBUG', False) == 'True'
 
 OUTPUT_LENGTH = 10
 
 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', DEFAULT_SECRET_KEY).split(',')
 
 
 INSTALLED_APPS = [
@@ -63,8 +69,12 @@ WSGI_APPLICATION = 'foodgram.wsgi.application'
 # Database
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('POSTGRES_DB', 'django'),
+        'USER': os.getenv('POSTGRES_USER', 'django'),
+        'PASSWORD': os.getenv('POSTGRES_PASSWORD', ''),
+        'HOST': os.getenv('DB_HOST', 'localhost'),
+        'PORT': os.getenv('DB_PORT', 5432)
     }
 }
 
@@ -89,9 +99,9 @@ AUTH_PASSWORD_VALIDATORS = [
 
 
 # Internationalization
-LANGUAGE_CODE = 'ru-ru'
+LANGUAGE_CODE = os.getenv('LANGUAGE_CODE', 'ru-ru')
 
-TIME_ZONE = 'Europe/Moscow'
+TIME_ZONE = os.getenv('TIME_ZONE', 'Europe/Moscow')
 
 USE_I18N = True
 
@@ -129,7 +139,7 @@ DJOSER = {
 
 REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
-        'rest_framework.permissions.IsAuthenticated', # TODO Настроить пермишены
+        'rest_framework.permissions.IsAuthenticated',
     ],
     "DEFAULT_AUTHENTICATION_CLASSES": [
         'rest_framework.authentication.TokenAuthentication',
