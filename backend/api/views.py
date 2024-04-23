@@ -17,6 +17,7 @@ from food.models import (
 )
 from rest_framework.response import Response
 
+from .paginations import LimitPageNumberPagination
 from .serializers import (
     TagsSerializer,
     IngredientSerializer,
@@ -116,6 +117,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthorOrReadOnly,)
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipesFilter
+    pagination_class = LimitPageNumberPagination
 
     def get_serializer_class(self):
         if self.request.method == 'GET':
