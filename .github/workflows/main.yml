@@ -142,4 +142,4 @@ jobs:
             Репозиторий: <a href="https://github.com/${{ github.repository }}">${{ github.repository }}</a>
             Коммит: <i>${{ github.event.commits[0].message }}</i>
             Посмотреть изменения: <a href="https://github.com/${{ github.repository }}/commit/${{github.sha}}"><b>ЗДЕСЬ</b></a>
-            Проект Kittygram успешно развернут на удаленном сервере.
+            Проект FoodGram успешно развернут на удаленном сервере.
