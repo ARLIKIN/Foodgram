@@ -86,6 +86,7 @@ class Recipe(BaseName):
     class Meta(BaseName.Meta):
         verbose_name = 'Рецепт'
         verbose_name_plural = 'рецепт'
+        ordering = ('pub_date',)
 
 
 class Favorite(BaseCartItem):
