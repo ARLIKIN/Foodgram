@@ -54,7 +54,7 @@ docker compose -f docker-compose.yml exec backend python manage.py import_ingred
 ```
 <br>
 
-5. Создайте .env в корне проекта. Пример:
+6. Создайте .env в корне проекта. Пример:
 ```
 POSTGRES_USER=username_BD
 POSTGRES_PASSWORD=password_BD
