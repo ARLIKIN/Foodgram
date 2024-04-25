@@ -1,6 +1,6 @@
 import io
 
-from django.http import HttpResponse, FileResponse
+from django.http import FileResponse
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
 from django.db.models import F, Exists, OuterRef, Value
