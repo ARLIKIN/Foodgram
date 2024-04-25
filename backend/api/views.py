@@ -1,6 +1,6 @@
 import io
 
-from django.http import HttpResponse
+from django.http import HttpResponse, FileResponse
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
 from django.db.models import F, Exists, OuterRef, Value
@@ -32,7 +32,7 @@ from .permissions import IsAuthorOrReadOnly
 User = get_user_model()
 
 
-class MyUserViewSet(UserViewSet):
+class UserViewSet(UserViewSet):
 
     def get_permissions(self):
         if self.request.path.endswith('me/'):
@@ -56,7 +56,7 @@ class MyUserViewSet(UserViewSet):
         )
         return self.get_paginated_response(serializer.data)
 
-    @action(detail=True)
+    @action(detail=True, methods=[])
     def subscribe(self, request, pk) -> Response:
         """Добавляет или удаляет рецепт в корзину"""
 
@@ -92,16 +92,18 @@ class MyUserViewSet(UserViewSet):
                 {'errors': 'Пользователь не существует'},
                 status=status.HTTP_404_NOT_FOUND
             )
-        if not Subscribe.objects.filter(user=request.user, sub_user=user):
+
+        del_count, _ = Subscribe.objects.filter(
+            user=request.user, sub_user=user
+        ).delete()
+        if del_count:
             return Response(
-                {'errors': 'Вы не подписаны на пользователя'},
-                status=status.HTTP_400_BAD_REQUEST
+                'Успешная отписка',
+                status=status.HTTP_204_NO_CONTENT
             )
-        subscriber = Subscribe.objects.get(user=request.user, sub_user=user)
-        subscriber.delete()
         return Response(
-            'Успешная отписка',
-            status=status.HTTP_204_NO_CONTENT
+            {'errors': 'Вы не подписаны на пользователя'},
+            status=status.HTTP_400_BAD_REQUEST
         )
 
 
@@ -209,6 +211,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def download_shopping_cart(self, request):
         user = request.user
         shopping_cart = user.shoppingcarts.all()
+        file = self.create_file_str(shopping_cart)
+        file_object = io.BytesIO()
+        file_object.write(file.encode())
+        file_object.seek(0)
+        return FileResponse(file_object, filename='shopping_cart.txt')
+
+    def create_file_str(self, shopping_cart):
         ingredients = []
         for card in shopping_cart:
             ingredients.append(
@@ -217,7 +226,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
                     amount=F('recipe_ingredients__amount')
                 ).first()
             )
-
         unique_objects = {}
         file = ''
         for ingredient in ingredients:
@@ -229,14 +237,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         for key, ingredient_list in unique_objects.items():
             total_amount = sum(obj['amount'] for obj in ingredient_list)
             file += f'{key[0]} ({key[1]}) — {total_amount}\n'
-
-        file_object = io.BytesIO()
-        file_object.write(file.encode())
-        file_object.seek(0)
-        response = HttpResponse(file_object, content_type='text/plain')
-        response['Content-Disposition'] = \
-            'attachment; filename="shopping_cart.txt"'
-        return response
+        return file
 
     @action(detail=True, permission_classes=(IsAuthenticated,))
     def shopping_cart(self, request, pk) -> Response:
