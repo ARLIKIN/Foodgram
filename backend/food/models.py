@@ -32,7 +32,6 @@ class BaseName(models.Model):
 
 
 class Tag(BaseName):
-    """Модель для тэгов."""
     color = models.CharField(verbose_name='Цвет', max_length=7)
     slug = models.CharField(verbose_name='Слаг', max_length=200)
 
@@ -42,7 +41,6 @@ class Tag(BaseName):
 
 
 class Ingredient(BaseName):
-    """Модель для ингредиентов."""
     measurement_unit = models.CharField(
         verbose_name='Единицы измерения', max_length=200
     )
@@ -63,7 +61,6 @@ class RecipeIngredient(models.Model):
 
 
 class Recipe(BaseName):
-    """Модель для рецептов."""
     author = models.ForeignKey(
         User, on_delete=models.CASCADE, verbose_name='Автор'
     )
@@ -90,7 +87,6 @@ class Recipe(BaseName):
 
 
 class Favorite(BaseCartItem):
-    """Модель для избранных рецептов."""
 
     class Meta(BaseCartItem.Meta):
         verbose_name = 'Избранное'
@@ -98,7 +94,6 @@ class Favorite(BaseCartItem):
 
 
 class ShoppingCart(BaseCartItem):
-    """Модель для коризны."""
 
     class Meta(BaseCartItem.Meta):
         verbose_name = 'Корзина'
@@ -106,7 +101,6 @@ class ShoppingCart(BaseCartItem):
 
 
 class Subscribe(models.Model):
-    """Модель для подписок."""
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,

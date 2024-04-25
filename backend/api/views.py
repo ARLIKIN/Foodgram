@@ -3,7 +3,7 @@ import io
 from django.http import HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
-from django.db.models import F
+from django.db.models import F, Exists, OuterRef, Value
 from rest_framework import viewsets, status
 
 from django.contrib.auth import get_user_model
@@ -118,6 +118,34 @@ class RecipeViewSet(viewsets.ModelViewSet):
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipesFilter
     pagination_class = LimitPageNumberPagination
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        if not self.request.user.is_authenticated:
+            queryset = queryset.annotate(
+                is_favorited=Value(False),
+            )
+            queryset = queryset.annotate(
+                is_in_shopping_cart=Value(False),
+            )
+            return queryset
+
+        queryset = queryset.annotate(
+            is_favorited=Exists(
+                Favorite.objects.filter(
+                    user=self.request.user,
+                    recipe=OuterRef('pk'))
+            )
+        )
+        queryset = queryset.annotate(
+            is_in_shopping_cart=Exists(
+                ShoppingCart.objects.filter(
+                    user=self.request.user,
+                    recipe=OuterRef('pk')
+                )
+            )
+        )
+        return queryset
 
     def get_serializer_class(self):
         if self.request.method == 'GET':
