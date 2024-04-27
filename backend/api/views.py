@@ -3,7 +3,7 @@ import io
 from django.http import FileResponse
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
-from django.db.models import F, Exists, OuterRef, Value
+from django.db.models import Exists, OuterRef, Value
 from rest_framework import viewsets, status
 
 from django.contrib.auth import get_user_model

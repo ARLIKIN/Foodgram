@@ -1,4 +1,3 @@
-from django.forms import ImageField
 from djoser.serializers import UserSerializer
 from django.db import transaction
 from django.db.models import F
@@ -95,7 +94,9 @@ class ReadRecipeSerializer(serializers.ModelSerializer):
     author = UserSerializer()
     tags = TagsSerializer(many=True)
     is_favorited = serializers.BooleanField(default=False, read_only=True)
-    is_in_shopping_cart = serializers.BooleanField(default=False, read_only=True)
+    is_in_shopping_cart = serializers.BooleanField(
+        default=False, read_only=True
+    )
     ingredients = serializers.SerializerMethodField()
 
     class Meta:
@@ -157,7 +158,6 @@ class WriteRecipeSerializer(serializers.ModelSerializer):
                     'Количество ингредиента должно быть больше 0'
                 )
         return super().validate(data)
-
 
     def validate_cooking_time(self, cooking_time):
         if cooking_time <= 0:
