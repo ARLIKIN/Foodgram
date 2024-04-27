@@ -3,7 +3,6 @@ import io
 from django.http import FileResponse
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
-from django.db.models import Exists, OuterRef, Value
 from rest_framework import viewsets, status
 
 from django.contrib.auth import get_user_model
@@ -116,39 +115,13 @@ class TegViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
-    queryset = Recipe.objects.all()
     permission_classes = (IsAuthorOrReadOnly,)
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipesFilter
     pagination_class = LimitPageNumberPagination
 
     def get_queryset(self):
-        queryset = super().get_queryset()
-        if not self.request.user.is_authenticated:
-            queryset = queryset.annotate(
-                is_favorited=Value(False),
-            )
-            queryset = queryset.annotate(
-                is_in_shopping_cart=Value(False),
-            )
-            return queryset
-
-        queryset = queryset.annotate(
-            is_favorited=Exists(
-                Favorite.objects.filter(
-                    user=self.request.user,
-                    recipe=OuterRef('pk'))
-            )
-        )
-        queryset = queryset.annotate(
-            is_in_shopping_cart=Exists(
-                ShoppingCart.objects.filter(
-                    user=self.request.user,
-                    recipe=OuterRef('pk')
-                )
-            )
-        )
-        return queryset
+        return Recipe.recipe_manager.annotate_recipe(self.request)
 
     def get_serializer_class(self):
         if self.request.method == 'GET':

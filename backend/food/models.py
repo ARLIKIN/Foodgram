@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.db import models
 from django.contrib.auth import get_user_model
+from django.db.models import Value, Exists, OuterRef
 
 User = get_user_model()
 
@@ -60,6 +61,36 @@ class RecipeIngredient(models.Model):
         unique_together = ('recipe', 'ingredient')
 
 
+class RecipeQuerySet(models.QuerySet):
+
+    def annotate_recipe(self, request):
+        if not request.user.is_authenticated:
+            return (
+                self.annotate(
+                    is_favorited=Value(False),
+                    is_in_shopping_cart=Value(False)
+                )
+            )
+        return (
+            self.annotate(
+                is_favorited=Exists(
+                    request.user.favorites.filter(recipe=OuterRef('pk'))
+                ),
+                is_in_shopping_cart=Exists(
+                    request.user.shoppingcarts.filter(recipe=OuterRef('pk'))
+                )
+            )
+        )
+
+
+class RecipeManager(models.Manager):
+    def get_queryset(self):
+        return RecipeQuerySet(self.model)
+
+    def annotate_recipe(self, request):
+        return RecipeQuerySet(self.model).annotate_recipe(request)
+
+
 class Recipe(BaseName):
     author = models.ForeignKey(
         User, on_delete=models.CASCADE, verbose_name='Автор'
@@ -80,6 +111,9 @@ class Recipe(BaseName):
         Ingredient, through='RecipeIngredient'
     )
 
+    objects = models.Manager()
+    recipe_manager = RecipeManager()
+
     class Meta(BaseName.Meta):
         verbose_name = 'Рецепт'
         verbose_name_plural = 'рецепт'
@@ -87,14 +121,12 @@ class Recipe(BaseName):
 
 
 class Favorite(BaseCartItem):
-
     class Meta(BaseCartItem.Meta):
         verbose_name = 'Избранное'
         verbose_name_plural = 'избранное'
 
 
 class ShoppingCart(BaseCartItem):
-
     class Meta(BaseCartItem.Meta):
         verbose_name = 'Корзина'
         verbose_name_plural = 'корзина'
