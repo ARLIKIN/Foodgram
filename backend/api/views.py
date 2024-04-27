@@ -28,6 +28,7 @@ from .serializers import (
 )
 from .filters import IngredientFilter, RecipesFilter
 from .permissions import IsAuthorOrReadOnly
+from .create_file import create_file_str
 
 User = get_user_model()
 
@@ -211,33 +212,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def download_shopping_cart(self, request):
         user = request.user
         shopping_cart = user.shoppingcarts.all()
-        file = self.create_file_str(shopping_cart)
+        file = create_file_str(shopping_cart)
         file_object = io.BytesIO()
         file_object.write(file.encode())
         file_object.seek(0)
         return FileResponse(file_object, filename='shopping_cart.txt')
-
-    def create_file_str(self, shopping_cart):
-        ingredients = []
-        for card in shopping_cart:
-            ingredients.append(
-                card.recipe.ingredients.values(
-                    'name', 'measurement_unit',
-                    amount=F('recipe_ingredients__amount')
-                ).first()
-            )
-        unique_objects = {}
-        file = ''
-        for ingredient in ingredients:
-            key = (ingredient['name'], ingredient['measurement_unit'])
-            if key in unique_objects:
-                unique_objects[key].append(ingredient)
-            else:
-                unique_objects[key] = [ingredient]
-        for key, ingredient_list in unique_objects.items():
-            total_amount = sum(obj['amount'] for obj in ingredient_list)
-            file += f'{key[0]} ({key[1]}) — {total_amount}\n'
-        return file
 
     @action(detail=True, permission_classes=(IsAuthenticated,))
     def shopping_cart(self, request, pk) -> Response:
@@ -254,14 +233,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
 class ShoppingCartViewSet(viewsets.ModelViewSet):
     queryset = ShoppingCart.objects.all()
-
-
-class FavoriteViewSet(viewsets.ModelViewSet):
-    queryset = Favorite.objects.all()
-
-
-class SubscribeViewSet(viewsets.ModelViewSet):
-    queryset = Subscribe.objects.all()
 
 
 class IngredientsViewSet(viewsets.ReadOnlyModelViewSet):

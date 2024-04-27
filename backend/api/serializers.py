@@ -1,3 +1,5 @@
+from django.forms import ImageField
+from djoser.serializers import UserSerializer
 from django.db import transaction
 from django.db.models import F
 from django.contrib.auth import get_user_model
@@ -13,7 +15,7 @@ from rest_framework.exceptions import ValidationError
 User = get_user_model()
 
 
-class UserSerializer(serializers.ModelSerializer):
+class UserSerializer(UserSerializer):
     is_subscribed = serializers.SerializerMethodField()
 
     class Meta:
@@ -92,8 +94,8 @@ class WriteRecipeIngredientSerializer(serializers.ModelSerializer):
 class ReadRecipeSerializer(serializers.ModelSerializer):
     author = UserSerializer()
     tags = TagsSerializer(many=True)
-    is_favorited = serializers.SerializerMethodField()
-    is_in_shopping_cart = serializers.SerializerMethodField()
+    is_favorited = serializers.BooleanField(default=False, read_only=True)
+    is_in_shopping_cart = serializers.BooleanField(default=False, read_only=True)
     ingredients = serializers.SerializerMethodField()
 
     class Meta:
@@ -112,12 +114,6 @@ class ReadRecipeSerializer(serializers.ModelSerializer):
             amount=F('recipe_ingredients__amount')
         )
 
-    def get_is_favorited(self, recipe):
-        return getattr(recipe, 'is_favorited', False)
-
-    def get_is_in_shopping_cart(self, recipe):
-        return getattr(recipe, 'is_in_shopping_cart', False)
-
 
 class WriteRecipeSerializer(serializers.ModelSerializer):
     ingredients = WriteRecipeIngredientSerializer(many=True)
@@ -133,10 +129,11 @@ class WriteRecipeSerializer(serializers.ModelSerializer):
         )
 
     def validate(self, data):
-        if 'image' not in data or not data['image']:
-            raise ValidationError(
-                'В запросе обязательно должна быть картинка'
-            )
+        if 'image' in data:
+            if not data['image']:
+                raise serializers.ValidationError(
+                    'В запросе обязательно должна быть картинка'
+                )
         if 'ingredients' not in data or not data['ingredients']:
             raise ValidationError(
                 'В запросе обязательно должны быть ингридиенты'
@@ -145,19 +142,13 @@ class WriteRecipeSerializer(serializers.ModelSerializer):
             raise ValidationError(
                 'В запросе обязательно должны быть тэги'
             )
-        return super().validate(data)
-
-    def validate_tags(self, tags):
-        for tag in tags:
-            if tags.count(tag) > 1:
+        for tag in data['tags']:
+            if data['tags'].count(tag) > 1:
                 raise ValidationError(
                     'Тэг дублируется'
                 )
-        return tags
-
-    def validate_ingredients(self, ingredients):
-        for ingredient in ingredients:
-            if ingredients.count(ingredient) > 1:
+        for ingredient in data['ingredients']:
+            if data['ingredients'].count(ingredient) > 1:
                 raise ValidationError(
                     'Ингридиент дублируется'
                 )
@@ -165,7 +156,8 @@ class WriteRecipeSerializer(serializers.ModelSerializer):
                 raise ValidationError(
                     'Количество ингредиента должно быть больше 0'
                 )
-        return ingredients
+        return super().validate(data)
+
 
     def validate_cooking_time(self, cooking_time):
         if cooking_time <= 0:
