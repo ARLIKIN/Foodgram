@@ -15,7 +15,7 @@
 Пароль: 12354
 
 ## Автор
-[Гончаров Никита](https://github.com/ARLIKIN)
+[ARLIKIN](https://github.com/ARLIKIN)
 
 ## Установка
 1. Склонируйте репозиторий.
